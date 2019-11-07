@@ -74,9 +74,9 @@ SYSLOG-MSG = <PRI>版本号 空格 时间戳 空格 主机名 空格 应用名 �
 ```
 
 ## 日志规则
-* #### 使用API
+* #### 建议使用库 [推荐]
 |Language|Library|
-|---|---
+|---|---|
 |Java|log4j
 |C#|log4net
 |C++|log4cplus
