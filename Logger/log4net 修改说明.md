@@ -32,7 +32,7 @@ for (; i < message.Length; i++)
 }
 ```
 ```C#
-// 修改后的代码支持中文，参考 syslog RFC 5424 协议信息格式
+// 修改后的代码支持中文，参考 syslog RFC 5424 协议信息格式（未严格按协议开发完整）
 //RFC 5424
 //SYSLOG-MSG = 优先级 版本 空格 时间戳 空格 主机名 空格 应用名 空格 进程id 空格 信息id
 
@@ -71,7 +71,7 @@ buffer = this.Encoding.GetBytes(builder.ToString());
 
 ## 修改 RollingFileAppender 不支持设置保留最多文件数量
 ```
-日志文件滚动保存文件数量，随时间会越来越多；增加保留最近创建的文件数量，删除其余旧的日志文件
+日志文件滚动保存文件数量，会随时间的推移日志文件越来越多；增加保留最近创建的文件数量，删除其余旧的日志文件
 新增配置属性 MaxReserveFileCount 保留最新的日志文件数量，配置示例：
 <param name="MaxReserveFileCount" value="30"/> <!-- -1表示全部保留不删除任何文件 -->
 ```
