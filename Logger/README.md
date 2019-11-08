@@ -1,4 +1,4 @@
-# 日志基基基本规范
+# 日志基基本规范
 ***
 
 参考：https://blog.csdn.net/lk142500/article/details/80424945
