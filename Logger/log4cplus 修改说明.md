@@ -20,7 +20,7 @@ log4cplus.appender.UDP_SOCKET.Appender.layout.ConversionPattern=[%D][%5p][%5t|%x
 //源码
 //Log4jUdpAppender.h
 // ... codes
-protedted:
+protected:
     bool xml = false;
 // ... codes
 
