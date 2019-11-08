@@ -18,6 +18,22 @@ log4cplus.appender.UDP_SOCKET.Appender.layout.ConversionPattern=[%D][%5p][%5t|%x
 ```
 ```C++
 //源码
+//Log4jUdpAppender.h
+// ... codes
+protedted:
+    bool xml = false;
+// ... codes
+
+//Log4jUdpAppender.cxx
+Log4jUdpAppender::Log4jUdpAppender(const helpers::Properties & properties)
+    : Appender(properties)
+    , port(5000)
+{
+    // ... codes
+    properties.getBool(xml, LOG4CPLUS_TEXT("XMLFormat"));
+    // ... codes
+}
+
 void
 Log4jUdpAppender::append(const spi::InternalLoggingEvent& event)
 {
