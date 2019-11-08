@@ -98,14 +98,15 @@ cout << "Hello" << endl;
 
 * #### if..else判断
 ```
-对于 else 是非正常的情况，需要根据情况选择打印 warn 或 error 日志。对于只有 if 没有 else 的地方，如果 else 的路径是不可能的，应当加上 else 语句，并打印 error 日志。
+对于 else 是非正常的情况，需要根据情况选择打印 warn 或 error 日志。
+对于只有 if 没有 else 的地方，如果 else 的路径是不可能的，应当加上 else 语句，并打印 error 日志。
 ```
 ```C#
 if(true)
 {
   // ...
 }else{
- Log.Error("这是不可能的");
+ Log.Error("这是不可能出现 false , 但也在输出信息保留");
 }
 ```
 
@@ -113,7 +114,7 @@ if(true)
 ```
 catch中的异常记录必须打印堆栈信息
 无论是否发生异常，都不要在不同地方重复记录针对同一事件的日志消息
-不要日志后又抛出异常，因为这样会多次记录日志，只允许记录一次日志
+不要日志后又抛出异常，因为这样会多次记录日志，只允许记录一次日志，但可以弹出提示框，或强制退出
 ```
 ```C#
 try{
@@ -123,6 +124,9 @@ try{
  throw e; //错误
  
  Log.Error("Exception:{0}", e);  //正确
+ MessageBox("xxxx");
+ //Or
+ //Exit(0);
 }
 ```
 
@@ -130,22 +134,34 @@ try{
 ```
 建议记录方法调用、入参、返回值，对于排查问题会有很大帮助；但级别不得高于 INFO 级，建议使用小于 DEBUG 级别
 ```
+```C#
+public void Start()
+{
+  // ... codes
+  if(Log.isInfoEnabled()) Log.Info("start ...");  //正确
+}
+protected void Analyse(String str)
+{
+  if(Log.isDebugEnabled())  Log.Debug("analyse::{0}", str); //正确
+}
+```
 
-* #### 注意/示例
+
+* #### 注意 示例
 ```C#
 // 字符拼接，建议使用占位符
-Log.Info("a:" + b); //错误
+Log.Info("a:" + b); //不建议
 Log.Info("a:{0}", b); //正确
 
 // 低于 INFO 级别必需做判断
-Log.Debug("debug message"); //错误
+Log.Debug("debug message"); //绝对不可以
 if(Log.isInfoEnabled()) Log.Info("info message"); //正确
 if(Log.isDebugEnabled()) Log.Debug("debug message"); //正确
 
 //循环体内不要打印 INFO 级别日志
 for(int i = 0; i < 100; i ++)
 {
- if(Log.isInfoEnabled()) Log.Info("info message::{0}", i); //错误
+ if(Log.isInfoEnabled()) Log.Info("info message::{0}", i); //不建议
  if(Log.isDebugEnabled()) Log.Debug("debug message::{0}", i);//正确
  if(Log.isTraceEnabled()) Log.Trace("trace message::{0}", i);//正确
 }
@@ -155,7 +171,7 @@ int a = 10;
 Log.Info("a:{0}", b);  //错误，输出的信息绝对不可出错
 
 //不输出无意义信息
-Log.Info("========================"); //错误，没意义
-Log.Info("++++++++++++++++++++++++"); //错误，没意义
+Log.Info("========================"); //不建议，没意义
+Log.Info("++++++++++++++++++++++++"); //不建议，没意义
 
 ```
