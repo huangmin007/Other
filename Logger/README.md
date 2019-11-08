@@ -97,11 +97,65 @@ cout << "Hello" << endl;
 ```
 
 * #### if..else判断
-* #### try..catch捕获
-* #### 重要函数出入口
-* #### 不推荐字符串拼接
-* #### 循环体内不要打印 INFO 级别日志
-* #### 注意
-  * 打印日志的代码任何情况下都不允许失败
-  * 不输出无意义信息
+```
+对于 else 是非正常的情况，需要根据情况选择打印 warn 或 error 日志。对于只有 if 没有 else 的地方，如果 else 的路径是不可能的，应当加上 else 语句，并打印 error 日志。
+```
+```C#
+if(true)
+{
+  // ...
+}else{
+ Log.Error("这是不可能的");
+}
+```
 
+* #### try..catch捕获
+```
+catch中的异常记录必须打印堆栈信息
+无论是否发生异常，都不要在不同地方重复记录针对同一事件的日志消息
+不要日志后又抛出异常，因为这样会多次记录日志，只允许记录一次日志
+```
+```C#
+try{
+ // ...
+}catch(Exception e){
+ Log.Error("Exception:{0}", e.Message); //错误
+ throw e; //错误
+ 
+ Log.Error("Exception:{0}", e);  //正确
+}
+```
+
+* #### 重要函数出入口
+```
+建议记录方法调用、入参、返回值，对于排查问题会有很大帮助；但级别不得高于 INFO 级，建议使用小于 DEBUG 级别
+```
+
+* #### 注意/示例
+```C#
+// 字符拼接，建议使用占位符
+Log.Info("a:" + b); //错误
+Log.Info("a:{0}", b); //正确
+
+// 低于 INFO 级别必需做判断
+Log.Debug("debug message"); //错误
+if(Log.isInfoEnabled()) Log.Info("info message"); //正确
+if(Log.isDebugEnabled()) Log.Debug("debug message"); //正确
+
+//循环体内不要打印 INFO 级别日志
+for(int i = 0; i < 100; i ++)
+{
+ if(Log.isInfoEnabled()) Log.Info("info message::{0}", i); //错误
+ if(Log.isDebugEnabled()) Log.Debug("debug message::{0}", i);//正确
+ if(Log.isTraceEnabled()) Log.Trace("trace message::{0}", i);//正确
+}
+
+//打印日志的代码任何情况下都不允许失败
+int a = 10;
+Log.Info("a:{0}", b);  //错误，输出的信息绝对不可出错
+
+//不输出无意义信息
+Log.Info("========================"); //错误，没意义
+Log.Info("++++++++++++++++++++++++"); //错误，没意义
+
+```
