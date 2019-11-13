@@ -152,6 +152,7 @@ protected void Analyse(String str)
 // 字符拼接，建议使用占位符
 Log.Info("a:" + b); //不建议
 Log.Info("a:{0}", b); //正确
+Log.Info($"a:{b}"); //正确
 
 // 低于 INFO 级别必需做判断
 Log.Debug("debug message"); //绝对不可以
