@@ -10,7 +10,7 @@ v2.080存在以下问题：
 2.修改 RollingFileAppender 不支持设置保留最多文件数量
 ```
 
-## 修改 RemoteSyslogAppender 不支持中文输出
+## 修改 RemoteSyslogAppender 增加支持中文输出
 ```
 RemoteSyslogAppender 默认是 ASCII 编码，即使外配置改为 GB2312 也不会支持中文
 源码只支持 syslog RFC 3164 4.1.3 协议，对 ASCII 的支持范围在 char(32 - 126) 之间的字符
@@ -69,17 +69,22 @@ buffer = this.Encoding.GetBytes(builder.ToString());
 // ... codes
 ```
 
-## 修改 RollingFileAppender 不支持设置保留最多文件数量
+## 修改 RollingFileAppender 增加支持 设置保留目录文件数量
 ```
 日志文件滚动保存文件数量，会随时间的推移日志文件越来越多；增加保留最近创建的文件数量，删除其余旧的日志文件
+
 新增配置属性 MaxReserveFileCount 保留最新的日志文件数量，配置示例：
 <param name="MaxReserveFileCount" value="30"/> <!-- -1表示全部保留不删除任何文件 -->
+
+新增加配置属性 MaxReserveFileDays 保留最新的日志文件天数，配置示例：
+<param name="MaxReserveFileDays" value="30"/> <!-- -1表示全部保留不删除任何文件 -->
 ```
 ```C#
 // 代码修改部份
 /// <summary>
-/// 跟据文件创建日期，保留最近创建的文件数量，其余的删除掉
-/// <para>注意：该函数是比较文件的创建日期，不是修改日期</para>
+/// 保留目录中的文件数量
+/// <para>跟据文件创建日期排序，保留 count 个最新文件，超出 count 数量的文件删除</para>
+/// <para>注意：该函数是比较文件的创建日期</para>
 /// </summary>
 /// <param name="count">要保留的数量</param>
 /// <param name="path">文件目录，当前目录 "/" 表示，不可为空</param>
@@ -105,13 +110,56 @@ public static void ReserveFileCount(int count, string path, string searchPattern
         Trace.TraceWarning("Delete File ... CreationTime:{0}\t Name:{1}", files[i].CreationTime, files[i].Name);
     }
 }
-   
+
+/// <summary>
+/// 保留目录中的文件天数
+/// <para>跟据文件上次修时间起计算，保留 days 天的文件，超出 days 天的文件删除</para>
+/// <para>注意：该函数是比较文件的上次修改日期</para>
+/// </summary>
+/// <param name="days">保留天数</param>
+/// <param name="path">文件夹目录</param>
+/// <param name="searchPattern">文件匹配类型</param>
+public static void ReserveFileDays(int days, string path, string searchPattern = null)
+{
+   if (days < 0 || String.IsNullOrWhiteSpace(path))
+   {
+      LogLog.Debug(declaringType, "ReserveFileDays 参数错误");
+      return;
+   }
+
+   DirectoryInfo dir = new DirectoryInfo(path);
+   FileInfo[] files = searchPattern == null ? dir.GetFiles() : dir.GetFiles(searchPattern, SearchOption.TopDirectoryOnly);
+   if (files.Length == 0) return;
+
+   IEnumerable<FileInfo> removes =
+         from file in files
+         where file.LastWriteTime < DateTime.Today.AddDays(-days)
+         select file;
+
+   foreach (var file in removes)
+   {
+      file.Delete();
+      LogLog.Debug(declaringType, $"Delete File ... LastWriteTime:{file.LastWriteTime}\t Name:{file.Name}");
+   }
+}
+
+// ... codes
+
 private int m_maxReserveFileCount = -1;
 public int MaxReserveFileCount
 {
    get { return m_maxReserveFileCount; }
    set { m_maxReserveFileCount = value; }
 }
+
+private int m_maxReserveFileDays = -1;
+public int MaxReserveFileDays
+{
+   get { return m_maxReserveFileDays; }
+   set { m_maxReserveFileDays = value; }
+}
+
+// ... codes
         
 override protected void OpenFile(string fileName, bool append)
 {
@@ -120,6 +168,12 @@ override protected void OpenFile(string fileName, bool append)
    {
       FileInfo fi = new FileInfo(fileName);
       ReserveFileCount(m_maxReserveFileCount, fi.Directory.Name, "*" + fi.Extension);
+   }
+   
+   if(m_maxReserveFileDays > 0)
+   {
+      FileInfo fi = new FileInfo(fileName);
+      ReserveFileDays(m_maxReserveFileDays, fi.Directory.Name, "*" + fi.Extension);
    }
 }
 ```
