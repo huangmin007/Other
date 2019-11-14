@@ -238,7 +238,8 @@ override protected void OpenFile(string fileName, bool append)
             <param name="StaticLogFileName" value="false" />
             <!--使用UTF-8编码-->
             <param name="Encoding" value="UTF-8" />
-            <!--最多保留日志文件数量，-1(默认)表示不做任何处理一直保留 -->
+            <!--日志文件的保留数量及方式，-1表示不处理，或可使用叠加方式 -->
+            <param name="MaxReserveFileDays" value="-1"/>
             <param name="MaxReserveFileCount" value="30"/>
             <!--记录日志写入文件时，不锁定文本文件，防止多线程时不能写Log,官方说线程非安全-->
             <lockingModel type="log4net.Appender.FileAppender+MinimalLock" />
