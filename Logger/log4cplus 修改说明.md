@@ -6,7 +6,7 @@ Github:https://github.com/log4cplus/log4cplus
 DailyRollingFileAppender 也是会输出很多日志文件，但还未下手修改
 ```
 
-## 修改 Log4jUdpAppender 只支持输出 xml 格式日志信息
+## 修改 Log4jUdpAppender 增加支持输出 xml 格式和 Layout 自定义格式
 ```
 原 Log4jUdpAppender 只支持输出 xml 格式日志，后面修改为可选输出格式
 ```
