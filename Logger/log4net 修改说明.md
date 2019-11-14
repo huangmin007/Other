@@ -16,7 +16,7 @@ RemoteSyslogAppender 默认是 ASCII 编码，即使外配置改为 GB2312 也�
 源码只支持 syslog RFC 3164 4.1.3 协议，对 ASCII 的支持范围在 char(32 - 126) 之间的字符
 ```
 ```C#
-//部份源码 385行左右
+// RemoteSyslogAppender.cs 部份源码 385行左右
 // ... codes
 for (; i < message.Length; i++)
 {
@@ -80,7 +80,7 @@ buffer = this.Encoding.GetBytes(builder.ToString());
 <param name="MaxReserveFileDays" value="30"/> <!-- -1表示全部保留不删除任何文件 -->
 ```
 ```C#
-// 代码修改部份
+// RollingFileAppender.cs 代码修改部份
 /// <summary>
 /// 保留目录中的文件数量
 /// <para>跟据文件创建日期排序，保留 count 个最新文件，超出 count 数量的文件删除</para>
@@ -181,6 +181,7 @@ override protected void OpenFile(string fileName, bool append)
 
 # 参考配置 示例
 ```XML
+<!-- Log4Net.Config -->
 <?xml version="1.0" encoding="utf-8" ?>
 <configuration>
 
@@ -347,6 +348,7 @@ override protected void OpenFile(string fileName, bool append)
 
 # 扩展 AppenderSkeleton 示例(WPF TextBoxBase)
 ```C#
+// TextBoxBaseAppender.cs
 using System;
 using log4net.Core;
 using log4net.Layout;
