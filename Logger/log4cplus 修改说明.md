@@ -94,6 +94,66 @@ Log4jUdpAppender::append(const spi::InternalLoggingEvent& event)
 }
 ```
 
+## 修改 FileAppenderBase 增加日志文件保留时间，以天为单位
+```
+原 FileAppenderBase 日志滚动文件数量会很多，增加属性进行控制
+```
+```XML
+# 设置日志保留天数，按最后修改日期计算，默认为 -1 表示全部保留
+log4cplus.appender.FILE.Appender.ReserveDays=30
+```
+```C++
+void FileAppenderBase::ReserveDays(int days)
+{
+	if (days <= 0)return;
+	if (filename.empty())return;
+
+#if defined(_WIN32)
+	tstring const dir_sep(LOG4CPLUS_TEXT("\\"));
+#else
+	tstring const dir_sep(LOG4CPLUS_TEXT("/"));
+#endif
+
+	//获取文件目录路径
+	tstring directory;
+	fs::directory_entry entry = fs::directory_entry(filename);
+	log4cplus::tstring path = fs::absolute(entry).c_str();
+
+	if (!fs::is_directory(entry))
+	{
+		const size_t last_idx = path.rfind(dir_sep);
+		directory = path.substr(0, last_idx);
+	}
+	else
+	{
+		directory = path;
+	}
+
+	//获取当前时间
+	time_t now = time(0);	
+
+	//获取每个文件的最后修改日期
+	for (auto& fn : fs::directory_iterator(directory))
+	{
+		if (fs::is_directory(fn)) continue;
+		//if (fs::file_size(fn) == 0)
+		//{
+		//	fs::remove(fn);
+		//	continue;
+		//}
+
+		auto lw_time = fs::last_write_time(fn);
+		std::time_t f_time = decltype(lw_time)::clock::to_time_t(lw_time);
+
+		int c_days = std::difftime(now, f_time) / (24 * 60 * 60) + 1;
+		if (c_days > days)
+		{
+			fs::remove(fn);
+		}
+	}
+}
+```
+
 # 参考配置 示例
 ```XML
 # 根 Logger 的配置
