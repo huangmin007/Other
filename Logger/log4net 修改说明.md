@@ -178,6 +178,34 @@ override protected void OpenFile(string fileName, bool append)
 }
 ```
 
+# 代码使用 示例
+```C#
+using System.Windows;
+
+[assembly: log4net.Config.XmlConfigurator(ConfigFile = "log4net.config", Watch = true)] //或写在配置中，参考配置示例
+namespace Space
+{
+    /// <summary>
+    /// App.xaml 的交互逻辑
+    /// </summary>
+    public partial class App : Application
+    {
+        public static readonly log4net.ILog Log = log4net.LogManager.GetLogger("ApplicationLogger");
+
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            Log.InfoFormat("Application OnStartup");
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            base.OnExit(e);
+            Log.InfoFormat("Application OnExit");
+        }
+    }
+}
+```
 
 # 参考配置 示例
 ```XML
