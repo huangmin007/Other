@@ -246,8 +246,13 @@ namespace Space
             <appender-ref ref="ConsoleAppender" />
             <appender-ref ref="DebugStringAppender"/>
             <appender-ref ref="RemoteSyslogAppender"/>
-            <param name="ConversionPattern" value="[%date{yyyy-MM-dd HH:mm:ss}] [%thread] [%level] [%method(%line)] %logger [%ndc] - %message (%r) %newline" />
         </root>
+       
+       <!-- Sub Logger-->
+        <logger name="Sub.Logger" additivity="true">
+            <level value="INFO"/>
+            <appender-ref ref="LogFileAppender" />
+        </logger>
 
         <!-- 日志文本文件 输出 -->
         <appender  name="LogFileAppender" type="log4net.Appender.RollingFileAppender,log4net" >
@@ -261,7 +266,7 @@ namespace Space
             <!--按照何种方式产生多个日志文件(日期[Date],文件大小[Size],混合[Composite])-->
             <param name="RollingStyle" value="Composite" />
             <!--日志文件名格式 yyyy-MM-dd.log-->
-            <param name="DatePattern" value="'logger_'yyyy-MM-dd'.log'" />
+            <param name="DatePattern" value="'logger.'yyyy-MM-dd'.log'" />
             <!--日志文件名是否是固定不变的-->
             <param name="StaticLogFileName" value="false" />
             <!--使用UTF-8编码-->
@@ -360,7 +365,7 @@ namespace Space
         <!-- Console 输出 -->
         <appender name="ConsoleAppender" type="log4net.Appender.ConsoleAppender,log4net">
             <layout type="log4net.Layout.PatternLayout, log4net">
-                <conversionPattern value="[%date{yyyy-MM-dd HH:mm:ss}] [%thread] %level %logger [%method(%line)] - %message (%r) %newline" />
+                <conversionPattern value="[%date{HH:mm:ss.fff}] [%thread] %level %logger [%method(%line)] - %message (%r) %newline" />
             </layout>
         </appender>
         <!-- Debug 输出 -->
