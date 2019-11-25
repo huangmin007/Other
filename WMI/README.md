@@ -23,7 +23,7 @@ protected override void OnClosing(CancelEventArgs e)
 protected void PnPEntityChangedHandler(ManagementBaseObject obj)
 {
     ManagementExtension.ToDebug(obj);
-    ManagementBaseObject instance = (ManagementBaseObject)obj["TargetInstance"];
+    ManagementBaseObject instance = (ManagementBaseObject)obj.GetPropertyValue("TargetInstance");
     //if (instance.ClassPath.RelativePath != "Win32_PnPEntity") return;
 
     if (instance.GetPropertyValue("Name").ToString().ToLower().IndexOf(Serial.PortName.ToLower()) != -1)
