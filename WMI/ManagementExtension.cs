@@ -58,6 +58,30 @@ namespace SpaceCG.Extension
         }
 
         /// <summary>
+        /// 输出打印 PropertyDataCollection 属性名以及对应值
+        /// </summary>
+        /// <param name="collection"></param>
+        public static void ToDebug(PropertyDataCollection collection)
+        {
+            if (collection == null || collection.Count <= 0) return;
+
+            foreach (PropertyData pd in collection)
+            {
+                if (string.IsNullOrWhiteSpace(pd.Name) || pd.Value == null) continue;
+
+                if (!pd.IsArray)
+                    Console.WriteLine("\t{0} = \"{1}\"", pd.Name, pd.Value);
+                else
+                {
+                    Console.WriteLine("\t{0} = \n\t{{", pd.Name);
+                    foreach (var item in pd.Value as Array)
+                        Console.WriteLine("\t\t\"{0}\",", item);
+                    Console.WriteLine("\t}");
+                }
+            }
+        }
+
+        /// <summary>
         /// 输出打印 ManagementBaseObject 对象的属性名以及对应值
         /// </summary>
         /// <param name="obj"></param>
@@ -66,68 +90,18 @@ namespace SpaceCG.Extension
             Console.WriteLine("=====================================================Start");
             Console.WriteLine("ManagementBaseObject:\"{0}\"", obj.ClassPath);
             //SystemProperties
-            foreach (PropertyData pd in obj.SystemProperties)
-            {
-                if (string.IsNullOrWhiteSpace(pd.Name) || pd.Value == null) continue;
-
-                if (!pd.IsArray)
-                    Console.WriteLine("\t{0} = \"{1}\"", pd.Name, pd.Value);
-                else
-                {
-                    Console.WriteLine("\t{0} = \n\t{{", pd.Name);
-                    foreach (var item in pd.Value as Array)
-                        Console.WriteLine("\t\t\"{0}\",", item);
-                    Console.WriteLine("\t}");
-                }
-            }
+            ToDebug(obj.SystemProperties);
             //Properties
-            foreach (PropertyData pd in obj.Properties)
-            {
-                if (string.IsNullOrWhiteSpace(pd.Name) || pd.Value == null) continue;
-
-                if (!pd.IsArray)
-                    Console.WriteLine("\t{0} = \"{1}\"", pd.Name, pd.Value);
-                else
-                {
-                    Console.WriteLine("\t{0} = \n\t{{", pd.Name);
-                    foreach (var item in pd.Value as Array)
-                        Console.WriteLine("\t\t\"{0}\",", item);
-                    Console.WriteLine("\t}");
-                }
-            }
+            ToDebug(obj.Properties);
 
             ManagementBaseObject instance = (ManagementBaseObject)obj["TargetInstance"];
-            if (instance == null) return;
-            Console.WriteLine("TargetInstance:\"{0}\"", instance.ClassPath);
-            //SystemProperties
-            foreach (PropertyData pd in instance.SystemProperties)
+            if (instance != null)
             {
-                if (string.IsNullOrWhiteSpace(pd.Name) || pd.Value == null) continue;
-
-                if (!pd.IsArray)
-                    Console.WriteLine("\t{0} = \"{1}\"", pd.Name, pd.Value);
-                else
-                {
-                    Console.WriteLine("\t{0} = \n\t{{", pd.Name);
-                    foreach (var item in pd.Value as Array)
-                        Console.WriteLine("\t\t\"{0}\",", item);
-                    Console.WriteLine("\t}");
-                }
-            }
-            //Properties
-            foreach (PropertyData pd in instance.Properties)
-            {
-                if (string.IsNullOrWhiteSpace(pd.Name) || pd.Value == null) continue;
-
-                if (!pd.IsArray)
-                    Console.WriteLine("\t{0} = \"{1}\"", pd.Name, pd.Value);
-                else
-                {
-                    Console.WriteLine("\t{0} = \n\t{{", pd.Name);
-                    foreach (var item in pd.Value as Array)
-                        Console.WriteLine("\t\t\"{0}\",", item);
-                    Console.WriteLine("\t}");
-                }
+                Console.WriteLine("TargetInstance:\"{0}\"", instance.ClassPath);
+                //SystemProperties
+                ToDebug(instance.SystemProperties);
+                //Properties
+                ToDebug(instance.Properties);
             }
 
             Console.WriteLine("=====================================================End");
