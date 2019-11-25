@@ -42,7 +42,7 @@ protected void PnPEntityChangedHandler(ManagementBaseObject obj)
 // ... codes
 ```
 
-## 更多示例
+## 可以有更多应用
 ```
 Examples
 ```
