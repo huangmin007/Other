@@ -94,7 +94,7 @@ namespace SpaceCG.Extension
             //Properties
             ToDebug(obj.Properties);
 
-            ManagementBaseObject instance = (ManagementBaseObject)obj["TargetInstance"];
+            ManagementBaseObject instance = (ManagementBaseObject)obj.GetPropertyValue("TargetInstance");
             if (instance != null)
             {
                 Console.WriteLine("TargetInstance:\"{0}\"", instance.ClassPath);
