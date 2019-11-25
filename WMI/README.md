@@ -5,7 +5,7 @@
 https://github.com/huangmin007/ConsoleShellApplication/blob/master/WMI.Shell/WMIShell.cs
 ```
 
-## 串口热插拔的应用示例
+## WMI 之 串口热插拔的 应用示例
 ```C#
 // ... codes
 protected override void OnInitialized(EventArgs e)
@@ -40,4 +40,9 @@ protected void PnPEntityChangedHandler(ManagementBaseObject obj)
     }
 }
 // ... codes
+```
+
+## 更多示例
+```
+Examples
 ```
