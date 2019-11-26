@@ -5,57 +5,163 @@ using System.Management;
 namespace SpaceCG.Extension
 {
     /// <summary>
-    /// Management 扩展/实用/通用 函数
+    /// 注意：以后不会在这里更新，这只是一个示例，更多应用需自已云开发测试
+    /// <para>System.Management命名空间 扩展/实用/通用 函数</para>
     /// </summary>
     public static class ManagementExtension
     {
-        static ManagementEventWatcher USBInsertEvent;
-        static ManagementEventWatcher USBRemoveEvent;
+        #region "__InstanceCreationEvent" AND "__InstanceDeletionEvent"
+
+        /// <summary> ManagementEventWatcher Object </summary>
+        static ManagementEventWatcher InstanceCreationEvent;
+        /// <summary> ManagementEventWatcher Object </summary>
+        static ManagementEventWatcher InstanceDeletionEvent;
 
         /// <summary>
-        /// Create Listener Win32_PnpEntity Instance Evnet
-        /// <para>Win32_PnPEntity(WMI类) 表示即插即用设备的属性，有关属性参考：https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-pnpentity </para>
+        /// 监听 "__InstanceCreationEvent" AND "__InstanceDeletionEvent" 事件
+        /// <para>示例：$"TargetInstance ISA 'Win32_PnPEntity'"    //监听即插即用设备状态，有关 Win32_PnPEntity(WMI类) 属性参考：https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-pnpentity </para>
+        /// <para>示例：$"TargetInstance ISA 'Win32_PnPEntity' AND TargetInstance.Name LIKE '%({Serial.PortName})'"    //监听即插即用设备状态，且名称为串口名称</para>
+        /// <para>示例：$"TargetInstance ISA 'Win32_LogicalDisk' AND TargetInstance.DriveType = 2 OR TargetInstance.DriveType = 4"  //监听移动硬盘状态 </para>
+        /// <para>更多 WMI 类，请参考：https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/computer-system-hardware-classes </para>
         /// </summary>
+        /// <param name="wql_condition">WQL 条件语句，关于 WQL 参考：https://docs.microsoft.com/zh-cn/windows/win32/wmisdk/wql-sql-for-wmi?redirectedfrom=MSDN </param>
         /// <param name="changedCallback"></param>
         /// <param name="Log"></param>
-        public static void ListenPnPEntityEvent(Action<ManagementBaseObject> changedCallback, log4net.ILog Log = null)
+        public static void ListenInstanceChange(String wql_condition, Action<ManagementBaseObject> changedCallback, log4net.ILog Log = null)
         {
-            ManagementScope scope = new ManagementScope("root\\cimv2:Win32_PnPEntity");
-            scope.Options.EnablePrivileges = true;
+            if (InstanceCreationEvent != null || InstanceDeletionEvent != null) return;
+            ManagementScope scope = new ManagementScope(@"\\.\Root\CIMV2", new ConnectionOptions()
+            {
+                //Username = "",
+                //Password = "",
+                EnablePrivileges = true,
+            });
 
             TimeSpan interval = new TimeSpan(0, 0, 1);
 
-            //Insert
-            USBInsertEvent = new ManagementEventWatcher(scope, new WqlEventQuery("__InstanceCreationEvent", interval, "TargetInstance isa 'Win32_PnPEntity'"));
-            USBInsertEvent.EventArrived += (s, e) =>
+            //__InstanceCreationEvent 
+            InstanceCreationEvent = new ManagementEventWatcher(scope, new WqlEventQuery("__InstanceCreationEvent", interval, wql_condition));
+            InstanceCreationEvent.EventArrived += (s, e) =>
             {
                 Log?.InfoFormat("Instance Creation Event :: {0}", e.NewEvent.ClassPath);
                 changedCallback?.Invoke(e.NewEvent);
             };
-            //Remove
-            USBRemoveEvent = new ManagementEventWatcher(scope, new WqlEventQuery("__InstanceDeletionEvent", interval, "TargetInstance isa 'Win32_PnPEntity'"));
-            USBRemoveEvent.EventArrived += (s, e) =>
+
+            //__InstanceDeletionEvent
+            InstanceDeletionEvent = new ManagementEventWatcher(scope, new WqlEventQuery("__InstanceDeletionEvent", interval, wql_condition));
+            InstanceDeletionEvent.EventArrived += (s, e) =>
             {
                 Log?.InfoFormat("Instance Deletion Event :: {0}", e.NewEvent.ClassPath);
                 changedCallback?.Invoke(e.NewEvent);
             };
 
-            USBInsertEvent.Start();
-            USBRemoveEvent.Start();
+            InstanceCreationEvent.Start();
+            InstanceDeletionEvent.Start();
         }
+
+        public static void RemoveInstanceChange()
+        {
+            InstanceCreationEvent?.Stop();
+            InstanceDeletionEvent?.Stop();
+
+            InstanceCreationEvent?.Dispose();
+            InstanceDeletionEvent?.Dispose();
+
+            InstanceCreationEvent = null;
+            InstanceDeletionEvent = null;
+        }
+        #endregion
+
+
+        #region "__InstanceModificationEvent"
+
+        /// <summary> ManagementEventWatcher Object </summary>
+        static ManagementEventWatcher InstanceModificationEvent;
 
         /// <summary>
-        /// Remove Listener Win32_PnpEntity Instance Evnet
-        /// <para>Win32_PnPEntity(WMI类) 表示即插即用设备的属性，有关属性参考：https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-pnpentity </para>
+        /// 监听 "__InstanceModificationEvent" 事件 （持续监听事件，按固定 1s 查询一次状态生成事件）
+        /// <para>示例：$"TargetInstance ISA 'Win32_Battery'"    //持续监听电池状态，EstimatedChargeRemaining 表示电池电量表示电池电量；更多 Win32_Battery 类的属性，请参考：https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-battery </para>
+        /// <para>更多 WMI 类，请参考：https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/computer-system-hardware-classes </para>
         /// </summary>
-        public static void RemovePnPEntityEvent()
+        /// <param name="wql_condition">WQL 条件语句，关于 WQL 参考：https://docs.microsoft.com/zh-cn/windows/win32/wmisdk/wql-sql-for-wmi?redirectedfrom=MSDN </param>
+        /// <param name="changedCallback"></param>
+        /// <param name="Log"></param>
+        public static void ListenInstanceModification(String wql_condition, Action<ManagementBaseObject> changedCallback, log4net.ILog Log = null)
         {
-            USBInsertEvent?.Stop();
-            USBRemoveEvent?.Stop();
+            if (InstanceModificationEvent != null) return;
 
-            USBInsertEvent?.Dispose();
-            USBRemoveEvent?.Dispose();
+            ManagementScope scope = new ManagementScope(@"\\.\Root\CIMV2", new ConnectionOptions()
+            {
+                EnablePrivileges = true,
+            });
+
+            //__InstanceModificationEvent 
+            InstanceModificationEvent = new ManagementEventWatcher()
+            {
+                Scope = scope,
+                Query = new WqlEventQuery()
+                {
+                    Condition = wql_condition,
+                    WithinInterval = TimeSpan.FromSeconds(1),
+                    EventClassName = "__InstanceModificationEvent",
+                }
+            };
+            InstanceModificationEvent.EventArrived += (s, e) =>
+            {
+                if(Log != null && Log.IsDebugEnabled)
+                    Log.DebugFormat("Instance Modification Event :: {0}", e.NewEvent.ClassPath);
+                changedCallback?.Invoke(e.NewEvent);
+            };
+            InstanceModificationEvent.Start();
         }
+        /// <summary>
+        /// 监听 "__InstanceModificationEvent" 事件 （持续监听事件，按自定义时间间隔查询）
+        /// <para>示例：$"TargetInstance ISA 'Win32_Battery'"    //持续监听电池状态，EstimatedChargeRemaining 表示电池电量；更多 Win32_Battery 类的属性，请参考：https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-battery </para>
+        /// <para>更多 WMI 类，请参考：https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/computer-system-hardware-classes </para>
+        /// </summary>
+        /// <param name="wql_condition">WQL 条件语句，关于 WQL 参考：https://docs.microsoft.com/zh-cn/windows/win32/wmisdk/wql-sql-for-wmi?redirectedfrom=MSDN </param>
+        /// <param name="interval">按指定的间隔时间查询</param>
+        /// <param name="changedCallback"></param>
+        /// <param name="Log"></param>
+        public static void ListenInstanceModification(String wql_condition, TimeSpan interval, Action<ManagementBaseObject> changedCallback, log4net.ILog Log = null)
+        {
+            if (InstanceModificationEvent != null) return;
+
+            ManagementScope scope = new ManagementScope(@"\\.\Root\CIMV2", new ConnectionOptions()
+            {
+                EnablePrivileges = true,
+            });
+
+            //__InstanceModificationEvent 
+            InstanceModificationEvent = new ManagementEventWatcher()
+            {
+                Scope = scope,
+                Query = new WqlEventQuery()
+                {
+                    Condition = wql_condition,
+                    WithinInterval = interval,
+                    EventClassName = "__InstanceModificationEvent",
+                }
+            };
+            InstanceModificationEvent.EventArrived += (s, e) =>
+            {
+                if (Log != null && Log.IsDebugEnabled)
+                    Log.DebugFormat("Instance Modification Event :: {0}", e.NewEvent.ClassPath);
+                changedCallback?.Invoke(e.NewEvent);
+            };
+            InstanceModificationEvent.Start();
+        }
+        /// <summary>
+        /// 移除 "__InstanceModificationEvent" 监听事件
+        /// </summary>
+        public static void RemoveInstanceModification()
+        {
+            InstanceModificationEvent?.Stop();
+            InstanceModificationEvent?.Dispose();
+            InstanceModificationEvent = null;
+        }
+        #endregion
+
 
         /// <summary>
         /// 输出打印 PropertyDataCollection 属性名以及对应值
