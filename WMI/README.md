@@ -29,8 +29,12 @@ protected void PnPEntityChangedHandler(ManagementBaseObject obj)
 {
     ManagementExtension.ToDebug(obj);
     ManagementBaseObject instance = (ManagementBaseObject)obj.GetPropertyValue("TargetInstance");
+    
+    //这里也一样，可不需要做判断
     //if (instance.ClassPath.RelativePath != "Win32_PnPEntity") return;
 
+    //针对定向查询，可不需要在做结节判断
+    //例如下面判断与串口名称是否一致
     if (instance.GetPropertyValue("Name").ToString().ToLower().IndexOf(Serial.PortName.ToLower()) != -1)
     {
         if (obj.ClassPath.RelativePath == "__InstanceCreationEvent")
