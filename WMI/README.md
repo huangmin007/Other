@@ -12,13 +12,18 @@ protected override void OnInitialized(EventArgs e)
 {
     base.OnInitialized(e);
     App.Log.InfoFormat("OnInitialized.");
-    ManagementExtension.ListenPnPEntityEvent(PnPEntityChangedHandler, App.Log);
+    
+    //针对指定的串口监听
+    string wql = $"TargetInstance isa 'Win32_PnPEntity' AND TargetInstance.Name LIKE '%({Serial.PortName})'";
+    //OR
+    //string wql = $"TargetInstance isa 'Win32_PnPEntity' AND TargetInstance.Name LIKE '%(COM_)' OR TargetInstance.Name LIKE '%(COM__)'";
+    ManagementExtension.ListenInstanceChange(wql, PnPEntityChangedHandler, App.Log);
 }
 protected override void OnClosing(CancelEventArgs e)
 {
     base.OnClosing(e);
     App.Log.InfoFormat("OnClosing.");
-    ManagementExtension.RemovePnPEntityEvent();
+    ManagementExtension.RemoveInstanceChange();
 }
 protected void PnPEntityChangedHandler(ManagementBaseObject obj)
 {
