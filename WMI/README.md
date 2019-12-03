@@ -72,7 +72,7 @@ private void Window_Loaded(object sender, RoutedEventArgs e)
     //Marshal.GetLastWin32Error();
 }
 
-private IntPtr WindowProcHandler(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+protected IntPtr WindowProcHandler(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
 {
     WinMsgFlag flag = (WinMsgFlag)msg;
     Console.WriteLine("{0} {1}", flag, wParam.ToInt32());
