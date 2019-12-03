@@ -74,27 +74,42 @@ private void Window_Loaded(object sender, RoutedEventArgs e)
 
 protected IntPtr WindowProcHandler(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
 {
-    WinMsgFlag flag = (WinMsgFlag)msg;
-    Console.WriteLine("{0} {1}", flag, wParam.ToInt32());
+    MessageType mt = (MessageType)msg;
+    Console.WriteLine("MessageType:{0} {1}", mt, wParam.ToInt32());
 
-    if (msg == (int)WinMsgFlag.WM_DEVICECHANGE)
+    if (mt == MessageType.WM_DEVICECHANGE)
     {
-        switch (wParam.ToInt32())
-        {
-            case (int)WinMsgFlag.DBT_DEVICEARRIVAL:
-                Console.WriteLine("Device Arrival");
-                break;
+        DeviceBroadcastType dbt = (DeviceBroadcastType)wParam.ToInt32();
+        Console.WriteLine("DeviceBroadcastType: {0}", dbt);
 
-            case (int)WinMsgFlag.DBT_DEVICEREMOVECOMPLETE:
-                Console.WriteLine("Device Move Complete");
+        switch (dbt)
+        {
+            case DeviceBroadcastType.DBT_DEVICEARRIVAL:
+            case DeviceBroadcastType.DBT_DEVICEREMOVECOMPLETE:
+                Console.WriteLine(dbt == DeviceBroadcastType.DBT_DEVICEARRIVAL ? "Device Arrival" : "Device Move Complete");
+
+                DEV_BROADCAST_HDR hdr = (DEV_BROADCAST_HDR)Marshal.PtrToStructure<DEV_BROADCAST_HDR>(lParam);
+                Console.WriteLine("{0}", hdr);
+
+                if (hdr.dbch_devicetype == DeviceType.DBT_DEVTYP_PORT)
+                {
+                    DEV_BROADCAST_PORT port = (DEV_BROADCAST_PORT)Marshal.PtrToStructure<DEV_BROADCAST_PORT>(lParam);
+                    Console.WriteLine(port);
+                }
+                if (hdr.dbch_devicetype == DeviceType.DBT_DEVTYP_VOLUME)
+                {
+                    DEV_BROADCAST_VOLUME volume = (DEV_BROADCAST_VOLUME)Marshal.PtrToStructure<DEV_BROADCAST_VOLUME>(lParam);
+                    Console.WriteLine(volume);
+                }
                 break;
 
             default:
                 break;
         }
 
-        handled = true; 
+        handled = true;
     }
+
     return IntPtr.Zero;
 }
 ```
