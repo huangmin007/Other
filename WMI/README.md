@@ -56,7 +56,7 @@ protected void PnPEntityChangedHandler(ManagementBaseObject obj)
 Examples
 ```
 
-## 另一种监听设备热插拔事件
+## Window Message 方式监听设备热插拔事件
 ```C#
 //C# WPF, WinFroms的也一样监听Window Message
 private void Window_Loaded(object sender, RoutedEventArgs e)
