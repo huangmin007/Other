@@ -5,7 +5,7 @@ using System.Management;
 namespace SpaceCG.Extension
 {
     /// <summary>
-    /// 注意：以后不会在这里更新，这只是一个示例，更多应用需自已云开发测试
+    /// 注意：以后不会在这里更新，这只是一个示例，更多应用需自已去开发测试
     /// <para>System.Management命名空间 扩展/实用/通用 函数</para>
     /// </summary>
     public static class ManagementExtension
@@ -214,22 +214,26 @@ namespace SpaceCG.Extension
         }
 
         /// <summary>
-        /// 这只是示例函数代码，用于查询 WMI 信息。更多 WMI 应用需自行思考。
-        /// <para>获取当前计算机的串行端口名的数组，请使用 SerialPort.GetPortNames(); </para>
+        /// 获取当前计算机的 串行端口 完整名称 的数组
+        /// <para>与 <see cref="System.IO.Ports.SerialPort.GetPortNames"/> 不同，SerialPort.GetPortNames() 只输出类似"COM3,COM4,COMn"，该函数输出串口对象的名称或是驱动名，类似："USB Serial Port (COM59)" </para>
+        /// <para>这只是示例函数代码，用于查询 WMI 信息。更多 WMI 应用需自行思考。</para>
         /// </summary>
         /// <returns></returns>
         public static string[] GetPortNames()
         {
             String queryString = "SELECT Name FROM Win32_PnPEntity WHERE Name LIKE '%(COM_)' OR Name LIKE '%(COM__)'";
-            ManagementObjectSearcher searcher = new ManagementObjectSearcher(queryString);
-            ManagementObjectCollection collection = searcher.Get();
 
-            var names = from ManagementObject obj in collection
-                        from PropertyData pd in obj.Properties
-                        where !string.IsNullOrWhiteSpace(pd.Name) && pd.Value != null
-                        select pd.Value.ToString();
+            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(queryString))
+            {
+                ManagementObjectCollection collection = searcher.Get();
 
-            return names.ToArray();
+                var names = from ManagementObject obj in collection
+                            from PropertyData pd in obj.Properties
+                            where !string.IsNullOrWhiteSpace(pd.Name) && pd.Value != null
+                            select pd.Value.ToString();
+
+                return names.ToArray();
+            }
         }
 
     }
