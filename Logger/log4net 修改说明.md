@@ -7,13 +7,15 @@ Githut:https://github.com/apache/logging-log4net
 对 v2.080 版本做以下修改，重新输出版本号 v2.081
 v2.080存在以下问题：
 1.修改 RemoteSyslogAppender 不支持中文，协议版本低的问题
-2.修改 RollingFileAppender 不支持设置保留最多文件数量
+2.修改 RollingFileAppender 不支持设置保留最多文件数量或是文件保留天数
+3.修改 UdpAppender 不支持序列输出的问题
 ```
 
 ## 修改 RemoteSyslogAppender 增加支持中文输出以输出序列化格式
 ```
 RemoteSyslogAppender 默认是 ASCII 编码，即使外配置改为 GB2312 也不会支持中文
 源码只支持 syslog RFC 3164 4.1.3 协议，对 ASCII 的支持范围在 char(32 - 126) 之间的字符
+
 <!-- UdpAppender 增加属性，输出序列化格式，默认为 false， RemoteSyslogAppender 继承 UdpAppender -->
 <serialization value="true"/> 
 ```
