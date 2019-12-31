@@ -10,10 +10,12 @@ v2.080存在以下问题：
 2.修改 RollingFileAppender 不支持设置保留最多文件数量
 ```
 
-## 修改 RemoteSyslogAppender 增加支持中文输出
+## 修改 RemoteSyslogAppender 增加支持中文输出以输出序列化格式
 ```
 RemoteSyslogAppender 默认是 ASCII 编码，即使外配置改为 GB2312 也不会支持中文
 源码只支持 syslog RFC 3164 4.1.3 协议，对 ASCII 的支持范围在 char(32 - 126) 之间的字符
+<!-- UdpAppender 增加属性，输出序列化格式，默认为 false， RemoteSyslogAppender 继承 UdpAppender -->
+<serialization value="true"/> 
 ```
 ```C#
 // RemoteSyslogAppender.cs 部份源码 385行左右
@@ -229,14 +231,14 @@ namespace Space
     </configSections>
 
     <!-- Config Examples : http://logging.apache.org/log4net/release/config-examples.html -->
-    <log4net debug="true">
+    <log4net debug="false">
         <!--Root Logger-->
         <root>
             <!-- 
             日志等级：OFF > FATAL(致命错误) > ERROR(一般错误) > WARN(警告) > INFO(一般信息) > DEBUG(调试信息) > ALL 
             跟据项目需求，开启/引用输出源名称
             -->
-            <level value="INFO" />
+            <level value="ALL" />
             <appender-ref ref="UdpAppender" />
             <!--appender-ref ref="SmtpAppender" /-->
             <appender-ref ref="LogFileAppender" />
@@ -245,10 +247,16 @@ namespace Space
             <!--appender-ref ref="TraceAppender" /-->
             <appender-ref ref="ConsoleAppender" />
             <appender-ref ref="DebugStringAppender"/>
-            <appender-ref ref="RemoteSyslogAppender"/>
+            <!--appender-ref ref="RemoteSyslogAppender"/-->
         </root>
-       
-       <!-- Sub Logger-->
+
+        <!-- Library Logger-->
+        <logger name="Library.Logger" additivity="true">
+            <level value="INFO"/>
+            <appender-ref ref="LogFileAppender" />
+        </logger>
+
+        <!-- Sub Logger-->
         <logger name="Sub.Logger" additivity="true">
             <level value="INFO"/>
             <appender-ref ref="LogFileAppender" />
@@ -256,6 +264,7 @@ namespace Space
 
         <!-- 日志文本文件 输出 -->
         <appender  name="LogFileAppender" type="log4net.Appender.RollingFileAppender,log4net" >
+            <!-- 日志文件名 -->
             <param name="File" value="Logs/" />
             <!--是否是向文件中追加日志-->
             <param name="AppendToFile" value="true" />
@@ -271,15 +280,16 @@ namespace Space
             <param name="StaticLogFileName" value="false" />
             <!--使用UTF-8编码-->
             <param name="Encoding" value="UTF-8" />
-            <!--日志文件的保留数量及方式，-1表示不处理，或可使用叠加方式 -->
+            <!-- 以下两个属性是个修改源码后的版本 version: 2.0.8.1 -->
+            <!--日志文件的保留数量及方式，-1表示不处理，或可使用叠加方式-->
             <param name="MaxReserveFileDays" value="-1"/>
             <param name="MaxReserveFileCount" value="30"/>
             <!--记录日志写入文件时，不锁定文本文件，防止多线程时不能写Log,官方说线程非安全-->
             <lockingModel type="log4net.Appender.FileAppender+MinimalLock" />
             <!--定义输出布局风格-->
             <layout type="log4net.Layout.PatternLayout,log4net">
-                <param name="ConversionPattern" value="[%date{HH:mm:ss}] [%thread] %level %logger [%method(%line)] - %message (%r) %newline" />
-                <param name="Header" value="[Header]&#13;&#10;" />
+                <param name="ConversionPattern" value="[%date{HH:mm:ss}] [%2thread] [%5level] [%logger] [%method(%line)] - %message (%r) %newline" />
+                <param name="Header" value="&#13;&#10;[Header]&#13;&#10;" />
                 <param name="Footer" value="[Footer]&#13;&#10;&#13;&#10;" />
             </layout>
         </appender>
@@ -312,12 +322,14 @@ namespace Space
         </appender>
 
         <!-- UDP远程 输出 -->
+        <!-- 2019.12.20 增加属性 serialization, 表示输出格式为序列化的 LoggingEvent 对象，还是 layout 字符格式序列，默认为字符格式 -->
         <appender name="UdpAppender" type="log4net.Appender.UdpAppender">
             <!--encoding value="gb2312" /-->
             <remotePort value="6666" />
             <remoteAddress value="127.0.0.1" />
+            <serialization value="false"/>
             <layout type="log4net.Layout.PatternLayout, log4net">
-                <conversionPattern value="[%date{yyyy-MM-dd HH:mm:ss}] [%property{log4net:HostName}] [%thread] [%level] %logger [%method(%line)] - %message (%r) %newline" />
+                <conversionPattern value="[%date{yyyy-MM-dd HH:mm:ss}] [%property{log4net:HostName}] [%2thread] [%5level] [%logger] [%method(%line)] - %message (%r) %newline" />
             </layout>
         </appender>
 
@@ -341,16 +353,17 @@ namespace Space
                 <threshold value="WARN"/>
             </evaluator>
             <layout type="log4net.Layout.PatternLayout">
-                <conversionPattern value="[%date{yyyy-MM-dd HH:mm:ss}] [%thread] %level [%method(%line)] %logger [%ndc] - %message (%r) %newline" />
+                <conversionPattern value="[%date{yyyy-MM-dd HH:mm:ss}] [%2thread] [%5level] [%method(%line)] %logger [%ndc] - %message (%r) %newline" />
             </layout>
         </appender>
 
         <!-- SysLog 输出 -->
-        <!-- 2019/11/06 修改了log4net RemoteSyslogAppender 部份源码 version: 2.0.8.1 -->
+        <!-- 2019/11/06 修改了log4net RemoteSyslogAppender(继承 UdpAppender，属性 serialization 可用) 部份源码 version: 2.0.8.1 -->
         <!-- 原版本 syslog 协议版本为 RFC3164 数据编码为 ACSII 码，不支持中文消息；后面将 syslog 版本修为 RFC5424 数据编码改为系统默认编码，可以支持中文了 -->
         <appender name="RemoteSyslogAppender" type="log4net.Appender.RemoteSyslogAppender,log4net">
             <remoteAddress value="127.0.0.1" />
             <remotePort value="514" />
+            <serialization value="false"/>
             <layout type="log4net.Layout.PatternLayout, log4net">
                 <conversionPattern value="[%property{log4net:HostName}] [%thread] [%level] %logger [%method(%line)] - %message (%r) %newline" />
             </layout>
@@ -359,19 +372,19 @@ namespace Space
         <!-- Trace 输出 -->
         <appender name="TraceAppender" type="log4net.Appender.TraceAppender,log4net">
             <layout type="log4net.Layout.PatternLayout, log4net">
-                <conversionPattern value="Trace:[%date{yyyy-MM-dd HH:mm:ss}] [%thread] %level %logger [%method(%line)] - %message (%r) %newline" />
+                <conversionPattern value="Trace:[%date{HH:mm:ss.fff}] [%2thread] [%5level] [%logger] [%method(%line)] - %message (%r) %newline" />
             </layout>
         </appender>
         <!-- Console 输出 -->
         <appender name="ConsoleAppender" type="log4net.Appender.ConsoleAppender,log4net">
             <layout type="log4net.Layout.PatternLayout, log4net">
-                <conversionPattern value="[%date{HH:mm:ss.fff}] [%thread] %level %logger [%method(%line)] - %message (%r) %newline" />
+                <conversionPattern value="[%date{HH:mm:ss.fff}] [%2thread] [%5level] [%logger] [%method(%line)] - %message (%r) %newline" />
             </layout>
         </appender>
         <!-- Debug 输出 -->
         <appender name="DebugStringAppender" type="log4net.Appender.OutputDebugStringAppender,log4net" >
             <layout type="log4net.Layout.PatternLayout, log4net">
-                <conversionPattern value="Debug:[%date{HH:mm:ss}] [%thread] %level %logger [%method(%line)] - %message (%r) %newline" />
+                <conversionPattern value="Debug:[%date{HH:mm:ss.fff}] [%2thread] [%5level] [%logger] [%method(%line)] - %message (%r) %newline" />
             </layout>
         </appender>
 
@@ -395,56 +408,84 @@ using System.Windows.Media;
 namespace SpaceCG.Log4Net
 {
     /// <summary>
-    /// Log4Net WPF TextBoxBase Appender
+    /// Log4Net WPF TextBoxBase/TextBox/RichTextBox Appender
     /// </summary>
-    public class TextBoxBaseAppender : AppenderSkeleton
+    public class TextBoxAppender : AppenderSkeleton
     {
-        protected static readonly SolidColorBrush InfoColor = new SolidColorBrush(Color.FromArgb(0x7F, 0xFF, 0xFF, 0xFF));
-        protected static readonly SolidColorBrush WarnColor = new SolidColorBrush(Color.FromArgb(0x7F, 0xFF, 0xFF, 0x00));
-        protected static readonly SolidColorBrush ErrorColor = new SolidColorBrush(Color.FromArgb(0x7F, 0xFF, 0x00, 0x00));
-        protected static readonly SolidColorBrush FatalColor = new SolidColorBrush(Color.FromArgb(0xBF, 0xFF, 0x00, 0x00));
+        /// <summary> Backgroud Color 1 </summary>
+        public static readonly SolidColorBrush BgColor1 = new SolidColorBrush(Color.FromArgb(0x00, 0xC8, 0xC8, 0xC8));
+        /// <summary> Backgroud Color 2 </summary>
+        public static readonly SolidColorBrush BgColor2 = new SolidColorBrush(Color.FromArgb(0x60, 0xC8, 0xC8, 0xC8));
+        /// <summary> Default Text Color 3 </summary>
+        public static readonly SolidColorBrush TextColor = new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
+
+        /// <summary> Info Color </summary>
+        public static readonly SolidColorBrush InfoColor = new SolidColorBrush(Color.FromArgb(0x7F, 0xFF, 0xFF, 0xFF));
+        /// <summary> Warn Color </summary>
+        public static readonly SolidColorBrush WarnColor = new SolidColorBrush(Color.FromArgb(0x7F, 0xFF, 0xFF, 0x00));
+        /// <summary> Error Color </summary>
+        public static readonly SolidColorBrush ErrorColor = new SolidColorBrush(Color.FromArgb(0x7F, 0xFF, 0x00, 0x00));
+        /// <summary> Fatal Color </summary>
+        public static readonly SolidColorBrush FatalColor = new SolidColorBrush(Color.FromArgb(0xBF, 0xFF, 0x00, 0x00));
 
         /// <summary>
         /// 获取或设置最大可见行数
         /// </summary>
         protected uint MaxLines = 512;
-        protected TextBoxBase TextBox;
-        protected Action<String, Level> AppendTextDelegate;
+        /// <summary> TextBoxBase </summary>
+        protected TextBoxBase TextBoxBase;
+        /// <summary> TextBox.AppendText Delegate Function </summary>
+        protected Action<LoggingEvent> AppendLoggingEventDelegate;
 
         private TextBox tb;
         private RichTextBox rtb;
+        private bool changeBgColor = true;  //切换背景标志变量
+
 
         /// <summary>
-        /// Log4Net Appender for WPF TextBoxBase 
+        /// Log4Net Appender for WPF TextBoxBase(TextBox and RichTextBox)
         /// </summary>
         /// <param name="textBox"></param>
-        public TextBoxBaseAppender(TextBoxBase textBox)
+        public TextBoxAppender(TextBoxBase textBox)
         {
-            this.TextBox = textBox;
-            this.AppendTextDelegate = TextBoxAppendText;
-            this.Layout = new PatternLayout("[%date{yyyy-MM-dd HH:mm:ss}] [%thread] [%level] [%method(%line)] %logger - %message (%r) %newline");
+            if (textBox == null) throw new ArgumentNullException("参数不能为空");
 
-            //Set Controls Default Config
-            if(this.TextBox is TextBox)
+            this.TextBoxBase = textBox;
+            this.TextBoxBase.IsReadOnly = true;
+            this.AppendLoggingEventDelegate = AppendLoggingEvent;
+            this.Layout = new PatternLayout("[%date{HH:mm:ss}] [%thread] [%5level] [%method(%line)] %logger - %message (%r) %newline");
+
+            DefaultStyle(textBox);
+            log4net.Config.BasicConfigurator.Configure(this);
+        }
+
+        /// <summary>
+        /// 设置控件默认样式
+        /// </summary>
+        /// <param name="textBox"></param>
+        protected void DefaultStyle(TextBoxBase textBox)
+        {
+            // 属 TextBoxBase 子级，可以使用 is 运算符
+            if (textBox is TextBox)
             {
-                tb = (TextBox)this.TextBox;
+                tb = (TextBox)this.TextBoxBase;
                 tb.IsReadOnly = true;
+                tb.Foreground = Brushes.Black;
                 tb.SetValue(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Auto);
             }
-            else if(this.TextBox is RichTextBox)
+            else if (textBox is RichTextBox)
             {
-                rtb = (RichTextBox)this.TextBox;
+                rtb = (RichTextBox)this.TextBoxBase;
                 rtb.IsReadOnly = true;
                 rtb.AcceptsReturn = true;
                 rtb.Document.LineHeight = 2;
+                rtb.Foreground = Brushes.Black;
                 rtb.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
             }
             else
             {
-                //...                
+                // ...                
             }
-
-            log4net.Config.BasicConfigurator.Configure(this);
         }
 
         /// <summary>
@@ -452,7 +493,7 @@ namespace SpaceCG.Log4Net
         /// </summary>
         /// <param name="textBox"></param>
         /// <param name="maxLines">最大行数为 1024 行，默认为 512 行</param>
-        public TextBoxBaseAppender(TextBoxBase textBox, uint maxLines):this(textBox)
+        public TextBoxAppender(TextBoxBase textBox, uint maxLines):this(textBox)
         {
             this.MaxLines = maxLines > 1024 ? 1024 : maxLines;
         }
@@ -463,12 +504,20 @@ namespace SpaceCG.Log4Net
         /// <param name="loggingEvent"></param>
         protected override void Append(LoggingEvent loggingEvent)
         {
-            if (this.TextBox == null) return;
-            if (!this.TextBox.IsLoaded) return;
+            this.TextBoxBase?.Dispatcher.BeginInvoke(this.AppendLoggingEventDelegate, loggingEvent);
+        }
 
+        /// <summary>
+        /// TextBox Append LoggingEvent
+        /// </summary>
+        /// <param name="loggingEvent"></param>
+        protected void AppendLoggingEvent(LoggingEvent loggingEvent)
+        {
+            if (loggingEvent == null) return;
+            
+            //LoggingEvent
             String text = string.Empty;
             PatternLayout patternLayout = this.Layout as PatternLayout;
-
             if (patternLayout != null)
             {
                 text = patternLayout.Format(loggingEvent);
@@ -479,17 +528,8 @@ namespace SpaceCG.Log4Net
             {
                 text = loggingEvent.LoggerName + "-" + loggingEvent.RenderedMessage + Environment.NewLine;
             }
-            
-            this.TextBox.Dispatcher.BeginInvoke(this.AppendTextDelegate, text, loggingEvent.Level);
-        }
 
-        /// <summary>
-        /// TextBox AppendText
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="level"></param>
-        protected void TextBoxAppendText(String text, Level level)
-        {
+            //TextBox
             if (tb != null)
             {
                 tb.AppendText(text);
@@ -500,12 +540,12 @@ namespace SpaceCG.Log4Net
 
                 return;
             }
-
+            //RichTextBox
             if (rtb != null)
             {
-                Paragraph paragraph = new Paragraph(new Run(text.Trim()));
-                paragraph.Background = level == Level.Fatal ? FatalColor : level == Level.Error ? ErrorColor : level == Level.Warn ? WarnColor : InfoColor;
-
+                Paragraph paragraph = new Paragraph(new Run(text.TrimEnd()));
+                paragraph.Background = GetBgColorBrush(loggingEvent.Level, changeBgColor = !changeBgColor);
+                
                 rtb.Document.Blocks.Add(paragraph);
                 rtb.ScrollToEnd();
 
@@ -514,7 +554,42 @@ namespace SpaceCG.Log4Net
 
                 return;
             }
-
+        }
+        
+        /// <summary>
+        /// 跟据 Level 获取颜色
+        /// </summary>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        public static SolidColorBrush GetColorBrush(Level level)
+        {
+            return level == Level.Fatal ? FatalColor : level == Level.Error ? ErrorColor : level == Level.Warn ? WarnColor : InfoColor;
+        }
+        /// <summary>
+        /// 跟据 Level and Line 获取背景颜色
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="line"></param>
+        /// <returns></returns>
+        public static SolidColorBrush GetBgColorBrush(Level level, int line)
+        {
+            if (level == Level.Fatal) return FatalColor;
+            else if (level == Level.Error) return ErrorColor;
+            else if (level == Level.Warn) return WarnColor;
+            else return line % 2 == 0 ? BgColor1 : BgColor2;
+        }
+        /// <summary>
+        /// 跟据 Level and Change 获取背景颜色
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="change"></param>
+        /// <returns></returns>
+        public static SolidColorBrush GetBgColorBrush(Level level, bool change)
+        {
+            if (level == Level.Fatal) return FatalColor;
+            else if (level == Level.Error) return ErrorColor;
+            else if (level == Level.Warn) return WarnColor;
+            else return change ? BgColor1 : BgColor2;
         }
         
     }
