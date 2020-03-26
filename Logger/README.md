@@ -79,9 +79,11 @@ SYSLOG-MSG = <PRI>版本号 空格 时间戳 空格 主机名 空格 应用名 �
 |Java|log4j
 |C#|log4net
 |C++|log4cplus
-|AS|...要求支持Syslog RFC5424格式
+|AS|要求支持Syslog RFC5424格式
 |硬件|...
 |AS/Unity移动端|要求支持Syslog RFC5424格式
+说明：AS、Unity要求支持Syslog RFC5424格式，统一端口号，目标地址可使用广播地址，或可设置目标地址
+
 
 * #### 禁用系统输出
 ```
